@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#13224f">
+<title>Phiếu theo dõi lớp 9E</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+  /* Phiếu theo dõi tuần — cùng ngôn ngữ "vở ô li" với web lớp, dựng lại thành thẻ để đọc tốt trên điện thoại */
+  :root{
+    --bg:#f2f5fb; --grid:#e1e9f6; --paper:#fdfeff; --paper2:#f6f9ff; --ink:#13213f; --muted:#5a6886; --line:#d2dcee;
+    --brand:#1f3f94; --cover:#13224f; --margin:#e4636c; --hl:#ffe566; --neg:#c8202f; --pos:#1b8a50;
+    --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    --hand:"Patrick Hand","Be Vietnam Pro",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;scroll-padding-top:120px;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:contain}
+  body{margin:0;font:15px/1.5 var(--font);color:var(--ink);background-color:var(--bg);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:22px 22px;
+    padding-bottom:env(safe-area-inset-bottom)}
+  button,input{font:inherit;color:inherit}
+  button,a,.rk,.pill,.seg button,.dseg button{touch-action:manipulation}
+  .pills,.ddays{-webkit-overflow-scrolling:touch}
+  :focus-visible{outline:3px solid #f2b705;outline-offset:2px}
+
+  /* bìa vở */
+  .cover{background:var(--cover);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 14px}
+  .cover .in{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px}
+  .sticker{display:flex;background:var(--paper);color:var(--ink);border-radius:4px 10px 10px 4px;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.3);flex:none}
+  .sticker .cls{background:#d92d3a;color:#fff;font-weight:800;font-size:22px;padding:4px 12px;display:flex;align-items:center}
+  .sticker .stk{padding:4px 14px 4px 11px;display:flex;flex-direction:column;justify-content:center;line-height:1.1}
+  .sticker .wk{font-family:var(--hand);font-size:25px;color:var(--brand)}
+  .sticker .rg{font-size:12px;color:var(--muted)}
+  .cover .sub{font-size:13px;opacity:.85;line-height:1.35}
+
+  main{max-width:1100px;margin:0 auto;padding:14px 14px 40px}
+  .paper{background:var(--paper);border:1px solid var(--line);border-left:6px double var(--margin);border-radius:4px 12px 12px 4px;
+    padding:16px 16px 16px 18px;box-shadow:0 1px 0 rgba(19,34,79,.05),0 14px 26px -18px rgba(19,34,79,.35)}
+  h2{margin:0 0 10px;font-size:16px;color:var(--brand)}
+  .muted{color:var(--muted)}
+
+  /* cảnh báo tổ chưa cập nhật */
+  .warn{background:#fff7c9;border:1px solid #efd95e;border-left:5px solid #f0c400;color:#5e4b00;padding:9px 13px;border-radius:4px 10px 10px 4px;font-size:13px;margin-bottom:12px}
+
+  /* xếp hạng tổ: điểm viết bút đỏ */
+  .rank{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+  .rk{all:unset;box-sizing:border-box;cursor:pointer;display:block;background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--brand);
+    border-radius:3px 3px 12px 12px;padding:10px 12px 12px;position:relative}
+  .rk:focus-visible{outline:3px solid #f2b705;outline-offset:2px}
+  .rk.r1{border-top-color:#e0a800;background:#fffbe6}
+  .rk .top{display:flex;align-items:center;justify-content:space-between;font-weight:600}
+  .rk .medal{font-size:22px;line-height:1}
+  .rk .n{font-family:var(--hand);font-size:34px;line-height:1.05;color:var(--neg);margin-top:2px}
+  .rk .n small{font-size:16px;color:var(--muted)}
+  .bar{height:6px;border-radius:6px;background:#e6edf9;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:var(--w);background:var(--brand);border-radius:6px;transform-origin:left;animation:grow .8s .1s ease-out both}
+  .r1 .bar i{background:#e0a800}
+  @keyframes grow{from{transform:scaleX(0)}}
+
+  /* dưới 80: dạ quang */
+  .u80 p{margin:0}
+  .u80 ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+  .u80 li{background:linear-gradient(transparent 20%,var(--hl) 20%);padding:1px 10px;border-radius:4px;font-size:14px}
+  .u80 li b{color:var(--neg);font-family:var(--hand);font-size:18px;font-weight:400}
+
+  /* thanh lọc dính đầu trang */
+  .bar2{position:sticky;top:0;z-index:5;margin:0 -14px 12px;padding:8px 14px;background:rgba(242,245,251,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{flex:none;min-height:40px;padding:0 15px;border-radius:20px;border:1px solid var(--line);background:var(--paper);font-weight:600;color:var(--muted);cursor:pointer}
+  .pill[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .tools{display:flex;gap:8px;margin-top:8px}
+  .tools input{flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .tools input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,63,148,.16)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
+  .seg button{border:0;background:var(--paper);padding:0 12px;min-height:40px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--chip,#e7eefb);color:var(--brand)}
+
+  /* thẻ tổ */
+  .tos{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+  .to{padding:0 0 4px 0;overflow:hidden}
+  .to header{display:flex;align-items:center;gap:10px;padding:12px 16px 10px 18px;border-bottom:2px solid var(--brand);background:var(--paper2)}
+  .to header h3{margin:0;font-size:17px;color:var(--brand);flex:1}
+  .to header .tot{font-family:var(--hand);font-size:24px;color:var(--neg);line-height:1}
+  .to header .rb{font-size:12px;font-weight:600;background:var(--chip,#e7eefb);color:var(--brand);border-radius:12px;padding:2px 9px}
+  .to ol{list-style:none;margin:0;padding:0}
+  .st{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 16px 9px 18px;border-bottom:1px solid var(--line)}
+  .st:last-child{border-bottom:0}
+  .st.low{background:#fff9d6}
+  .st .nm{font-family:var(--hand);font-size:20px;line-height:1.2;overflow-wrap:anywhere}
+  .st .sc{font-family:var(--hand);font-size:28px;line-height:1;color:var(--brand);text-align:right;align-self:center;grid-row:1/3;grid-column:2}
+  .st.low .sc{color:var(--neg)}
+  .st .sc small{font-size:13px;color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;grid-column:1}
+  .chip{font-size:12.5px;line-height:1.5;padding:0 8px;border-radius:10px;background:#fdecee;color:#a31826;white-space:nowrap}
+  .chip.p{background:#e6f6ec;color:#146b3c}
+  .none{font-size:12.5px;color:var(--muted);grid-column:1}
+  .empty{padding:24px 16px;text-align:center;color:var(--muted)}
+
+  /* nhận xét: chữ viết tay mực đỏ trên giấy kẻ dòng */
+  .notes{margin-top:14px;display:grid;gap:12px}
+  .note b{display:block;font-size:13px;color:var(--brand);margin-bottom:4px}
+  .note div{font-family:var(--hand);font-size:19px;line-height:26px;color:#8f1d2a;white-space:pre-wrap;overflow-wrap:anywhere;
+    background:repeating-linear-gradient(transparent 0,transparent 25px,#dbe5f4 25px,#dbe5f4 26px)}
+
+  /* lịch trực nhật */
+  .duty{margin-top:14px}
+  .dseg{display:flex;gap:6px;margin-bottom:10px}
+  .dseg button{flex:1;min-height:40px;border:1px solid var(--line);background:var(--paper);border-radius:10px;font-weight:600;color:var(--muted);cursor:pointer;touch-action:manipulation}
+  .dseg button[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .dstatus{font-size:13px;font-weight:600;color:var(--brand);margin-bottom:10px}
+  .ddays{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .dday{border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:3px 3px 10px 10px;padding:8px 10px;background:#fff}
+  .dday.hol{border-top-color:#d6a300;background:#fff8dc}
+  .dday .dw{font-weight:700;color:var(--brand);font-size:13px}
+  .dday .dt{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .dday .dl{font-size:13px;line-height:1.4}
+
+  footer{margin-top:18px;text-align:center;font-size:12px;color:var(--muted)}
+  .state{max-width:520px;margin:40px auto;text-align:center}
+  .state .ic{font-size:44px;line-height:1}
+  .state h1{font-size:19px;margin:10px 0 6px;color:var(--brand)}
+  .state button{margin-top:12px;min-height:42px;padding:0 18px;border:0;border-radius:9px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer}
+
+  @media(min-width:700px){
+    .rank{grid-template-columns:repeat(4,1fr)}
+    .tos{grid-template-columns:repeat(2,1fr)}
+    .tools{max-width:520px}
+    .bar2{padding-top:10px}
+  }
+  @media(min-width:1000px){ .cover .sub{font-size:14px} }
+  @media(prefers-reduced-motion:reduce){ .bar i{animation:none} html{scroll-behavior:auto} }
+  @media print{ .bar2,.state button{display:none} body{background:#fff} .paper{box-shadow:none} .to{break-inside:avoid} }
+</style>
+</head>
+<body>
+<div class="cover"><div class="in">
+  <div class="sticker"><span class="cls">9E</span><span class="stk"><span class="wk" id="hWeek">Phiếu theo dõi</span><span class="rg" id="hRange">&nbsp;</span></span></div>
+  <div class="sub">Phiếu theo dõi<br>Lớp 9E · 2026-2027</div>
+</div></div>
+
+<main id="root">
+  <div class="state paper" id="state"><div class="ic">📒</div><h1>Đang mở phiếu…</h1></div>
+</main>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const W = Number((location.pathname.match(/tuan(\d+)/) || [])[1]);
+const esc = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const fold = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
+const medal = r => ['🥇','🥈','🥉'][r-1] || '🏅';
+const two = x => String(x).padStart(2,'0');
+const fmtDT = ms => { const d = new Date(ms); return two(d.getHours())+':'+two(d.getMinutes())+' '+two(d.getDate())+'/'+two(d.getMonth()+1); };
+
+let D = null, lastKey = '', view = { to:0, q:'', sort:'stt', dw:'this' };
+
+function showState(icon, title, text, retry){
+  $('#root').innerHTML = `<div class="state paper"><div class="ic">${icon}</div><h1>${esc(title)}</h1><p class="muted">${esc(text||'')}</p>${retry?'<button id="retry">Thử lại</button>':''}</div>`;
+  if(retry) $('#retry').onclick = load;
+  D = null; lastKey = '';
+}
+
+async function load(){
+  try{
+    const r = await fetch('/api/public/week/'+W, { cache:'no-store' });
+    const j = await r.json().catch(()=>({}));
+    if(r.status === 404) return showState('🔒', 'Link chưa mở hoặc đã hết hạn', j.error);
+    if(!r.ok) throw new Error(j.error || 'Lỗi');
+    // chỉ vẽ lại khi số liệu đổi (tránh nhảy trang / chạy lại hiệu ứng mỗi lần tự làm mới)
+    const key = JSON.stringify([j.tos, j.under80, j.classComment, j.until, j.duty]);
+    D = j;
+    if(key !== lastKey){ lastKey = key; draw(); } else if(D.duty) drawDuty();
+    $('#ft') && ($('#ft').textContent = 'Cập nhật lúc '+fmtDT(j.updatedAt)+' · tự làm mới mỗi phút · link xem đến '+fmtDT(j.until));
+  }catch(e){
+    if(!D) showState('📡', 'Chưa tải được phiếu', 'Kiểm tra mạng rồi thử lại.', true);
+  }
+}
+
+function draw(){
+  document.title = 'Tuần '+D.week+' — Phiếu theo dõi lớp 9E';
+  $('#hWeek').textContent = 'Tuần '+D.week; $('#hRange').textContent = D.range;
+  const max = Math.max(1, ...D.tos.map(t=>t.total));
+  const late = D.tos.filter(t=>!t.updated).map(t=>t.to);
+  const rank = [...D.tos].sort((a,b)=>(a.rank||9)-(b.rank||9)||a.to-b.to).map(t=>`
+    <button class="rk${t.rank===1?' r1':''}" data-to="${t.to}" aria-label="Tổ ${t.to}, ${t.rank?'hạng '+t.rank:'chưa xếp hạng'}, ${t.total} điểm. Bấm để xem tổ này">
+      <span class="top"><span>Tổ ${t.to}</span><span class="medal">${t.rank?medal(t.rank):'⏳'}</span></span>
+      <div class="n">${t.total}<small> điểm</small></div>
+      <div class="bar"><i style="--w:${Math.max(4,Math.round(t.total/max*100))}%"></i></div>
+    </button>`).join('');
+  const u80 = D.under80.length
+    ? `<p><b style="color:var(--brand)">${D.under80.length} bạn dưới 80 điểm</b> <span class="muted">(được xếp trực bổ sung 1 ngày khi sổ tuần khoá)</span></p>
+       <ul>${D.under80.map(x=>`<li>${esc(x.name)} <span class="muted">Tổ ${x.to}</span> <b>${x.total}</b></li>`).join('')}</ul>`
+    : '<p>Không có bạn nào dưới 80 điểm tuần này. 👍</p>';
+  const duty = D.duty ? `
+    <section class="paper duty">
+      <h2>🧹 Lịch trực nhật</h2>
+      <div class="dseg" role="group" aria-label="Chọn tuần trực">
+        <button data-dw="this" aria-pressed="${view.dw!=='next'}">Tuần này</button>
+        <button data-dw="next" aria-pressed="${view.dw==='next'}">Tuần sau</button>
+      </div>
+      <div id="dutyBox"></div>
+    </section>` : '';
+  const notes = [];
+  if(D.classComment) notes.push(`<div class="note paper"><b>Nhận xét chung của lớp</b><div>${esc(D.classComment)}</div></div>`);
+  D.tos.filter(t=>t.comment).forEach(t=>notes.push(`<div class="note paper"><b>Nhận xét Tổ ${t.to}</b><div>${esc(t.comment)}</div></div>`));
+  $('#root').innerHTML = `
+    ${late.length?`<div class="warn">Tổ ${late.join(', ')} chưa cập nhật điểm tuần này nên chưa được xếp hạng.</div>`:''}
+    <div class="rank">${rank}</div>
+    <section class="paper u80" style="margin-bottom:12px">${u80}</section>
+    <div class="bar2">
+      <div class="pills" role="group" aria-label="Chọn tổ">
+        ${[0,...D.tos.map(t=>t.to)].map(t=>`<button class="pill" data-to="${t}" aria-pressed="${view.to===t}">${t?'Tổ '+t:'Tất cả'}</button>`).join('')}
+      </div>
+      <div class="tools">
+        <input id="q" type="search" placeholder="Tìm tên bạn…" aria-label="Tìm theo tên" value="${esc(view.q)}" autocomplete="off">
+        <div class="seg" role="group" aria-label="Sắp xếp">
+          <button data-sort="stt" aria-pressed="${view.sort==='stt'}">Theo STT</button>
+          <button data-sort="diem" aria-pressed="${view.sort==='diem'}">Điểm cao</button>
+        </div>
+      </div>
+    </div>
+    <div class="tos" id="tos"></div>
+    ${duty}
+    ${notes.length?`<div class="notes">${notes.join('')}</div>`:''}
+    <footer id="ft"></footer>`;
+  $('#root').querySelectorAll('[data-to]').forEach(b => b.onclick = () => { view.to = Number(b.dataset.to); sync(); if(b.classList.contains('rk')) $('.bar2').scrollIntoView({behavior:'smooth',block:'start'}); });
+  $('#root').querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { view.sort = b.dataset.sort; sync(); });
+  $('#q').oninput = e => { view.q = e.target.value; sync(); };
+  if(D.duty){
+    $('#root').querySelectorAll('[data-dw]').forEach(b => b.onclick = () => { view.dw = b.dataset.dw; drawDuty(); });
+    drawDuty();
+  }
+  sync();
+}
+function drawDuty(){
+  if(!D || !D.duty) return;
+  document.querySelectorAll('[data-dw]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dw === view.dw || (view.dw!=='next' && b.dataset.dw==='this'))));
+  const wk = view.dw === 'next' ? D.duty.nextWeek : D.duty.thisWeek;
+  $('#dutyBox').innerHTML = `
+    <div class="dstatus">${esc(wk.startText)} → ${esc(wk.endText)} · ${esc(wk.status)}</div>
+    <div class="ddays">${wk.days.map(d => `<div class="dday${d.holiday?' hol':''}"><div class="dw">${esc(d.dow)}</div><div class="dt">${esc(d.dateText)}</div><div class="dl">${esc(d.label)}</div></div>`).join('')}</div>`;
+}
+
+function sync(){
+  document.querySelectorAll('.pill').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.to) === view.to)));
+  document.querySelectorAll('[data-sort]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sort === view.sort)));
+  const q = fold(view.q.trim());
+  const html = D.tos.filter(t => !view.to || t.to === view.to).map(t => {
+    let st = t.students.filter(s => !q || fold(s.name).includes(q));
+    if(view.sort === 'diem') st = [...st].sort((a,b) => b.total - a.total);
+    if(!st.length) return '';
+    const rows = st.map(s => `<li class="st${s.total<80?' low':''}">
+        <span class="nm">${esc(s.name)}</span>
+        <span class="sc">${s.total}<small> đ</small></span>
+        ${s.items.length ? `<span class="chips">${s.items.map(i => `<span class="chip${i.p?' p':''}">${esc(i.l)}${i.raw ? ' '+(i.n>0?'+':'')+i.n : ' ×'+i.n}</span>`).join('')}</span>` : '<span class="none">Không có ghi nhận</span>'}
+      </li>`).join('');
+    return `<section class="paper to"><header><h3>Tổ ${t.to}</h3><span class="rb">${t.rank?'Hạng '+t.rank:'Chờ cập nhật'}</span><span class="tot">${t.total} đ</span></header><ol>${rows}</ol></section>`;
+  }).join('');
+  $('#tos').innerHTML = html || '<div class="paper empty">Không tìm thấy bạn nào tên "'+esc(view.q)+'".</div>';
+}
+
+if(!W) showState('🔎','Địa chỉ chưa đúng','Dạng đúng: /view/tuan5');
+else { load(); setInterval(load, 60000); document.addEventListener('visibilitychange', () => { if(!document.hidden) load(); }); }
+</script>
+</body>
+</html>
