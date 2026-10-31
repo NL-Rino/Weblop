@@ -1,0 +1,228 @@
+=========================================================
+BÀN GIAO DỰ ÁN "LỚP-WEB" (cập nhật 11/10/2026, APP_VERSION 2026-10-17a) — DÁN NGUYÊN FILE NÀY VÀO CLAUDE CODE
+=========================================================
+
+BỐI CẢNH
+- Web quản lý lớp 9E, trường Quang Trung, năm học 2026-2027 (tiếng Việt). Chủ dự án = admin.
+- Server Ubuntu 22, systemd service "lop-web", public qua Tailscale Funnel: https://ubuntu.tailada059.ts.net
+- Thư mục server: ~/lop-web. Dữ liệu: data/db.json (KHÔNG BAO GIỜ ghi đè khi cập nhật).
+- Node.js + Express + express-session + bcryptjs. Frontend: 1 file public/index.html (CSS+JS inline, không build).
+- Sửa chủ yếu 2 file: server.js và public/index.html (+ thư viện nền sao public/sky/, app Windows app-su-kien/app.py).
+
+CẬP NHẬT SERVER (luôn giữ data):
+  cp server.js ~/lop-web/server.js
+  cp public/index.html ~/lop-web/public/index.html
+  cp public/view.html ~/lop-web/public/view.html
+  cp -r public/sky ~/lop-web/public/        (khi có sửa thư viện nền sao)
+  sudo systemctl restart lop-web
+Giao hàng mỗi lần: server.js + public/index.html + zip kèm CAP-NHAT.txt.
+
+VỀ NGƯỜI DÙNG / CÁCH LÀM VIỆC ƯA THÍCH
+- Chủ dự án (admin) tự quản trị web lớp 9E; nói tiếng Việt, hay gõ tắt/không dấu đủ — đọc kỹ ý, chỗ mơ hồ thì hỏi lại.
+- Thích: làm xong là có zip giao ngay + giải thích ngắn bằng bảng/ví dụ cụ thể với tên học sinh thật; test kỹ trước khi giao.
+- Hay gửi ảnh chụp màn hình để chỉ lỗi. Nhiều người dùng web trên ĐIỆN THOẠI (tổ trưởng) → luôn kiểm tra giao diện màn hẹp.
+- Những lần mình hiểu sai trước đây: "quá 3 ngày" (thật ra là quy tắc tuần phạt ≥4 ngày), "trực lẻ" (phải là thành viên
+  cùng tổ, không lấy tổ khác), phạt không ảnh hưởng bộ đếm lượt trực. Khi đổi quy tắc trực nhật → giải thích bằng bảng tình huống.
+
+QUY TẮC LÀM VIỆC
+- KHÔNG dùng sub-agent. Trả lời tiếng Việt, gọn.
+- MỖI LẦN SỬA phải tăng APP_VERSION ở CẢ server.js và index.html (phải trùng nhau) → trình duyệt tự tải lại bản mới.
+  HTML được gửi với Cache-Control no-cache.
+- Test: chép server.js + index.html sang thư mục tạm, copy db.json thật vào data/ của bản tạm (đổi hash admin để đăng nhập),
+  chạy PORT=3999. Có thể giả lập ngày bằng file fake.js (ghi đè Date theo biến FAKE_NOW) chạy: node -r ./fake.js server.js
+- Login form là <select id="loginUser">; có localStorage 'lopweb_last_user' nhớ tài khoản; sessionStorage 'lopweb_tab_active' bắt buộc.
+- PowerShell 5.1 Set-Content -Encoding utf8 thêm BOM → tránh, dùng node/Edit để ghi file.
+
+PHÂN QUYỀN: admin, gvcn (thầy), loptruong, lpld (lớp phó lao động), totruong (theo tổ), + LINK ĐĂNG NHẬP NHANH:
+- Admin tab "Tài khoản" tạo link https://host/<mã 10 ký tự> với quyền (totruong+tổ / loptruong / gvcn / admin — admin phải xác nhận lại),
+  có hạn dùng, thu hồi được. db.quickLinks. Phiên link: req.user.quick=true, không đổi mật khẩu, không tạo link, không xem tài khoản.
+
+TRỰC NHẬT (viết lại 27/09 — CÔNG BẰNG TUYỆT ĐỐI, đọc kỹ)
+- Mô phỏng tuần 0 → hiện tại + vài tuần (dutySim/runSim, cache theo dbVer). Tuần đã chốt (roster v:2) = sự thật (replayWeek);
+  bản chốt kiểu cũ (không có v) chạy theo nhánh legacy (giữ tổ + penWeek). weekTo(w)=sim.weeks[w].to.
+- Loại tuần: normal (tổ theo vòng xoay, MỖI BÀN 1 ngày; ngày dư: trực bù "bu" → phạt "phat" → 1 bàn CHÍNH TỔ đó trực bù +8đ "le"
+  (pickBonusDesks: số lần trực thấp nhất, bằng nhau thì ngẫu nhiên cố định theo tuần); tuần phạt/phạt cả tổ: ngày dư → tổ kế tiếp),
+  penalty (số ngày phạt > số ngày dư: trực ngay tuần kế tiếp, LUÔN 1 người/ngày, quá 6 ngày dồn tiếp tuần sau; tổ dời tuần sau), group (phạt cả tổ "T1".."T4": 1 bàn/ngày), skip (cả tuần nghỉ).
+  Chỉ normal mới tính lượt vòng xoay. Người đang/vừa bị phạt không được trực lẻ +8.
+- Nghỉ (lễ hoặc đột xuất): người mất ngày → đơn vị trực bù (mk) xếp ở ngày dư sau; người bị phạt vẫn trực đủ.
+  Nghỉ đột xuất chỉ ở tuần đã chốt (sửa bản chốt v2 + r.makeup), bỏ nghỉ hoàn tác.
+- Chốt lịch 14:00 chiều CN trước tuần (lockAtMs). Lúc chốt: autoPenalizeUnder80() rồi snapshotV2 + countDutyWeek
+  (dutyCount cho normal/bu/manual; buCount + plus8 cho trực lẻ).
+- Phạt: db.duty.penalty[tuần] = [{id hoặc "T3", from, days, by, srcs?}]. Bỏ phạt: phần đã trực ở tuần chốt giữ lại; bản gốc vào
+  db.duty.penaltyTrash (khôi phục: /api/duty/penalty/restore, admin/lớp trưởng). Tổ trưởng chỉ bỏ phạt do mình ghi (by).
+- Tab Trực nhật hiện 2 tuần (admin: 7 tuần, /api/duty nWeeks). Tiêu đề tuần KHÔNG ghi "— Tổ X": chưa chốt → "⏳ Tổ chờ: Tổ N" (wk.waitTo = tổ tới lượt theo vòng xoay);
+  đã chốt → "🧹 Tổ N trực" / "⚠️ Tuần phạt" / "⚠️ Phạt cả Tổ N".
+- Xếp chỗ ngồi: tổ trưởng đăng nhập mà tổ chưa xác nhận → hộp 5 bàn x 2 (db.deskSetup). Admin/lớp trưởng: 4 nút xếp chỗ.
+- Câu thông báo copy: THU_WORD {0:"Chủ nhật",1:"thứ hai",...,6:"thứ bảy"} (đừng làm lệch).
+
+SAO LƯU: server tự sao lưu mỗi ngày vào data/backups/ (giữ 30), admin tải qua ⚙️ Cài đặt (/api/backup/download).
+  + Google Drive qua Apps Script: db.gdrive {url, secret, lastDate...}; /api/gdrive, /api/gdrive/config, /api/gdrive/upload;
+    gửi mỗi ngày (thử lại mỗi giờ). Test offline: GDRIVE_TEST=1 cho phép URL không phải script.google.com.
+
+PHẠT DƯỚI 80: tuần học N → tuần trực NGAY SAU (u80Target). Trước chốt: sim hiện "dự kiến" (loadU80Preview, key u80p:),
+  chốt thật lúc chốt lịch tuần đó 14:00 CN (autoPenalizeUnder80 gọi trong lockWeekIfDue + mỗi 30 phút; từ tuần db.duty.u80Start — mặc định 3, admin đổi ở ⚙️ Cài đặt,
+  /api/settings/u80-start; đổi mốc → purgeU80Before bỏ phạt tự động chưa trực của các tuần trước mốc; db.duty.u80Auto["tuần:tổ"]), 1 ngày/HS,
+  chống trùng bằng srcs "u80:tuần". Không còn nút bấm tay. Tổ đang gia hạn thì chờ; duyệt gia hạn → huỷ phạt tự động chưa trực của tổ đó.
+
+KHOÁ SỔ ĐIỂM: bookLockAt(w) = tuần ≤3: +13 ngày; từ tuần 4: +6 ngày (12:00 trưa CN cuối tuần). isBookLocked(w, to) tính cả gia hạn.
+  Gia hạn: tổ trưởng POST /api/book/extend-request (trừ 5đ vào HS tổ trưởng db.toLeaders[tổ], ghi vào tuần sổ đang mở),
+  admin /api/book/requests (+/:id/decide) → db.bookExt["tổ:tuần"]. /api/me: upcomingLocks (báo trước), pendingExt (chuông admin).
+  Admin tài khoản chính vẫn sửa được sổ đã khoá. Mở sẵn tuần nhỏ nhất chưa khoá (firstOpenWeek).
+
+TỔNG HỢP: nút "📸 Chụp ảnh" (gvcn + admin) vẽ bằng canvas đúng mẫu "PHIẾU THEO DÕI TUẦN N — LỚP 9E (2026-2027)":
+  bảng đủ cột lỗi (tiêu đề dọc + điểm), chia tổ, Khác, Tổng (<80 đỏ), Xếp hạng tổ 🥇🥈🥉, HS dưới 80, Nhận xét.
+  /api/summary rows có counts{key:số lần} và khac.
+
+NỀN SAO + SỰ KIỆN (27/09):
+- public/sky/: sky-core.js (window.SkyCore.init(host): CANVAS ~10fps, tự pause + tua chậm animation CSS của lớp trang trí, sao theo ngày VN quay quanh
+  data-center (% màn hình) theo giờ thật, sao băng, ánh chân trời theo giờ), 7 kiểu .html, danh-sach.json {files, co_dinh}, README.txt.
+- index.html loadSky(): chọn co_dinh hoặc files[ngàyVN % n] → #skyBg + body.has-sky. Có sự kiện → ẩn sao, trừ CSS chứa /*giu-nen-sao*/.
+- server: /sky phục vụ data/sky (bản admin sửa, không mất khi cập nhật) trước public/sky. API admin: GET /api/sky/files,
+  GET /api/sky/file?name=, POST /api/sky/file {name,content}, POST /api/sky/file/delete (về bản gốc).
+- app-su-kien/app.py (Tkinter, chỉ thư viện chuẩn; Chay-app.bat): đăng nhập cookie, tab Sự kiện (mẫu nhanh, màu, 2 hiệu ứng,
+  xem thử HTML mô phỏng, POST/PUT /api/themes, Hiện ngay/Dừng/Xoá; lưu thiết kế trong CSS /*thiet-ke:{json}*/,
+  phần tự viết sau /*--- CSS tự viết ---*/ và <!--tu-viet-->), tab Nền sao (sửa/tạo/về gốc/xoay vòng/tải về/đưa lên).
+=========================================================
+
+THẺ "LỊCH SỬ VI PHẠM" (02/10): tab sau Trực nhật, mọi tài khoản xem cả lớp. /api/violation-history?id= (rows + detail theo tuần).
+  Admin có nút −/+ chỉnh số hiển thị: POST /api/violation-history/adjust {id, field: duty|le|pen, delta ±1} → db.duty.vhAdj (không ảnh hưởng xếp lịch).
+GIỜ (02/10, bản 2026-10-08a): khoá sổ = 12:00 trưa CN (bookLockAt, so với vnNowMs); chốt lịch trực = 14:00 chiều CN (lockAtMs = weekStart − 10h).
+THÔNG BÁO SẮP KHOÁ SỔ (02/10, 2026-10-08a): mỗi đợt khoá chỉ báo 1 lần/tài khoản (users[].lockSeen, POST /api/lock-notice-ack; link nhanh dùng localStorage 'lopweb_locknotice_q'). Tuần cùng giờ khoá (vd 3 và 4) gộp 1 thông báo.
+
+QUẢN LÝ HỌC SINH (03/10, bản 2026-10-08a)
+- Thêm / xoá học sinh: CHỈ admin, gvcn, loptruong (canManageStudents). Tổ trưởng KHÔNG có nút Xoá/Thêm. Xoá có confirm ghi tên; không xoá được HS đang là tổ trưởng (db.toLeaders);
+  xoá HS đang có yêu cầu chuyển → yêu cầu tự "cancelled".
+- Chuyển học sinh giữa tổ (db.transfers[] {id, fromTo, toTo, studentId, swapId, status: pending|accepted|rejected|cancelled, ack}):
+  tổ trưởng bấm "Chuyển" → POST /api/transfer/request (không chuyển được tổ trưởng; 1 HS chỉ 1 yêu cầu chờ).
+  Tổ trưởng tổ nhận: GET /api/transfer/inbox (incoming + notices + outgoing), POST /api/transfer/:id/decide {accept, swapId?} (đổi chéo 1 bạn không phải tổ trưởng),
+  tổ gửi nhận thông báo kết quả rồi POST /api/transfer/:id/ack. Huỷ: POST /api/transfer/:id/cancel (tổ gửi hoặc admin).
+  moveStudentTo(): đổi s.to + ord, cập nhật db.deskSetup[tổ].order (đổi chéo → ngồi đúng chỗ của nhau). Điểm (entries), dutyCount, buCount, phạt gắn theo id nên đi theo HS.
+  Hộp thông báo hiện lúc đăng nhập (maybeGreet → transferInboxFirst → lockNoticeFirst → lời chúc) và khi mở lại tab sau ≥2 phút; không poll nền (tránh kéo dài phiên 20 phút).
+- Phạt trực: mỗi lần thêm ghi p.log [{by, days, at}] + p.at; /api/duty trả byName, addLog. Giao diện (penBy): chỉ admin + lớp trưởng thấy "✍ tên người thêm".
+- Lưu ý: điểm tuần cũ đi theo HS sang tổ mới nên tổng điểm tổ các tuần đã qua đổi theo.
+
+TRỢ LÝ AI (04/10, bản 2026-10-08a)
+- Khối lập phương 3D xoay (trong suốt, chỉ khung) ở góc màn hình, hiện khi đăng nhập nếu admin đã dán khoá API (ME.aiOn). Kéo để dời (nhớ vị trí, localStorage 'lopweb_ai_ui'); bấm → cửa sổ chat nổi:
+  kéo thanh tiêu đề để dời, kéo góc phải dưới để đổi cỡ, nút ◐ đổi độ trong suốt (100/75/50%), nút ✕ ẩn về khối lập phương (KHÔNG có chế độ thu nhỏ thành thanh tab — chủ dự án không muốn; tiêu đề không có icon). Có chip câu hỏi gợi ý theo vai trò. Lịch sử chat chỉ giữ trong sessionStorage.
+- Server (server.js, khối "Trợ lý AI"): POST /api/ai/ask {q, history} → gọi Gemini REST (generativelanguage.googleapis.com, header x-goog-api-key). Mặc định mô hình gemini-3.1-flash-lite
+  (miễn phí, rẻ nhất); lỗi 404 → thử gemini-flash-latest; lỗi 400 do tham số thinking → tự thử lại không có thinkingConfig. maxOutputTokens 700, temperature 0.3, chỉ gửi 6 lượt lịch sử gần nhất.
+  Prompt hệ thống = quy tắc + tài liệu hướng dẫn + "người hỏi" (tên/vai trò/tổ do SERVER lấy từ tài khoản, client không khai được) + ngày, tuần học. KHÔNG gửi tên/điểm học sinh; trợ lý chỉ đọc, không sửa được dữ liệu.
+  Giới hạn: db.ai.perUser (mặc định 20 câu/người/ngày, admin ×3), db.ai.perDay (600 tổng/ngày); db.aiUsage đếm theo ngày VN; lỗi Google không bị trừ lượt; mỗi người 1 câu tại 1 thời điểm.
+- Tài liệu hướng dẫn: file huong-dan.md cạnh server.js (bản gốc, cập nhật cùng bản giao); admin sửa trong ⚙️ Cài đặt → lưu vào data/huong-dan.md (không bị ghi đè khi cập nhật; để trống = về bản gốc). Khi đổi luật web nhớ cập nhật tài liệu này.
+- Admin (⚙️ Cài đặt → 🤖 Trợ lý AI): dán khoá API, đổi tên mô hình, số câu/ngày, tạm tắt. API: GET/POST /api/ai/config, GET/POST /api/ai/guide (chỉ admin tài khoản chính). Khoá nằm trong db.json (kể cả bản sao lưu/Drive).
+- Lưu ý gói miễn phí Google: dữ liệu có thể được Google dùng cải thiện sản phẩm → mặc định KHÔNG gửi dữ liệu học sinh. Hạn mức miễn phí Google không công bố cố định, hay đổi.
+- Test: server thử cần trỏ aiPost sang http mock (localhost:4000) vì sandbox không ra Internet.
+- (04/10, 2026-10-08a) Khoá API Google có thể chứa dấu chấm (định dạng mới, vd "AQ.…") → server chỉ kiểm tra: ký tự in được, không khoảng trắng/xuống dòng, 20–300 ký tự.
+- (05/10, 2026-10-08a) Bỏ icon 🤖 ở tiêu đề và bỏ hẳn chế độ thu nhỏ thành thanh; chỉ còn ẩn về khối lập phương.
+
+TRỢ LÝ AI v2 (06/10, bản 2026-10-08a) — thay thế mô tả trợ lý cũ ở trên
+- ĐỌC DỮ LIỆU THEO QUYỀN: server dựng khối "DỮ LIỆU TỪ WEB" cho mỗi câu hỏi (aiContext): tổ trưởng chỉ thấy điểm/nhận xét tổ mình; lớp trưởng, thầy, admin thấy cả lớp.
+  Lịch trực, phạt, lịch sử vi phạm cả lớp đều xem được (giống giao diện). "Người thêm phạt" chỉ cho admin + lớp trưởng. Chỉ ĐỌC + SOẠN chữ, không sửa dữ liệu.
+  Tiết kiệm token: chỉ đính kèm dữ liệu khi câu hỏi liên quan (regex AI_RE); mặc định tuần hiện tại + tuần trước; "tuần N" thì thêm tuần đó; hỏi cả năm/tháng/học kỳ/so sánh → dạng tổng hợp nhiều tuần.
+- ẨN DANH: mặc định tên học sinh → mã "HS<id>" trước khi gửi Google (cả dữ liệu lẫn câu hỏi; khớp không phân biệt hoa/thường/dấu; "bạn/em/HS + tên gọi duy nhất"), nhận về rồi đổi mã → tên.
+  Admin bật "gửi tên thật" ở ⚙️ Cài đặt (db.ai.realNames). Gói miễn phí Google có thể dùng dữ liệu để cải thiện sản phẩm → nên giữ ẩn danh.
+- 2 MODEL: tổ trưởng LUÔN model nhanh db.ai.model (mặc định gemini-3.1-flash-lite); lớp trưởng + thầy LUÔN model mạnh db.ai.modelPro (mặc định gemini-3-flash-preview);
+  admin chọn "Mạnh/Nhanh" trong khung chat. Client không ép được model (server tự chọn theo vai trò). Model mạnh quá tải (429) / hết hạn mức chung → tự chuyển nhanh + ghi chú.
+  Tên model sửa được trong Cài đặt (Google đổi tên thì chỉ cần sửa); 404 → thử gemini-flash-latest; 400 do thinkingConfig → thử lại không có.
+  Hạn mức/ngày: perUser (tổ trưởng 20), perUserAdv (lớp trưởng/thầy 40, admin ×2), perDay (tổng nhanh 600), perDayPro (tổng mạnh 200). Lỗi Google không bị trừ lượt.
+- LƯU CUỘC TRÒ CHUYỆN: data/ai-chats.jsonl (mỗi dòng 1 lượt hỏi/đáp hoặc 1 lần soạn nhận xét: thời gian, tài khoản, vai trò, tổ, model, câu hỏi, câu trả lời, độ dài dữ liệu đính kèm; dòng {fb,v} là 👍/👎; dòng {ev:'new'} là "Cuộc mới").
+  Lịch sử cũng do SERVER giữ (đăng nhập máy khác vẫn thấy; client không giả được lịch sử gửi cho model). Admin tải: /api/ai/chats/download?format=csv|jsonl|json (nút trong ⚙️ Cài đặt); /api/ai/chats xem JSON.
+  File > 30 MB tự xoay vòng (ai-chats-<ngày>.jsonl). File này KHÔNG nằm trong db.json nên không tự lên Google Drive — nhớ sao lưu cả thư mục data/.
+- CÁ NHÂN HOÁ: db.users[u].aiProfile {call, style: short|long|warm, note} — GET/POST /api/ai/profile (link nhanh không lưu được). Nút "Cá nhân hoá" trong khung chat.
+- SOẠN NHẬN XÉT: nút "✨ AI soạn nhận xét" cạnh 3 ô nhận xét (tuần của tổ #weekComment, tổ theo kỳ #toCmt, lớp #classCmt); POST /api/ai/draft {kind: week|to|class, to, period, value, current}.
+  Quyền = quyền sửa ô đó (tổ trưởng/admin cho week,to; lớp trưởng/admin cho class). AI chỉ điền bản nháp vào ô, người dùng tự bấm Lưu (đánh dấu "chưa lưu").
+- GIAO DIỆN: khối lập phương quay ngẫu nhiên (trục quay trôi dần, quaternion + matrix3d, ~30fps, dừng khi tab ẩn/mở chat); khung chat có: ＋ Cuộc mới, Cá nhân hoá, (admin) chọn Mạnh/Nhanh, 👍/👎, ghi chú khi đổi model.
+- huong-dan.md đã soạn lại đầy đủ theo server hiện tại (kể cả mục trợ lý). Khi đổi luật web NHỚ cập nhật file này (hoặc sửa trong ⚙️ Cài đặt → "Sửa tài liệu hướng dẫn").
+- Test: server thử trỏ aiPost sang http://localhost:4000 (mock Gemini) vì sandbox không ra Internet; đã kiểm tra quyền, ẩn tên, chọn model, dự phòng, lưu chat, soạn nhận xét.
+- (06/10, 2026-10-08a) KHÔNG CẮT: maxOutputTokens 4096 (hỏi đáp) / 3000 (soạn nhận xét); nếu Google dừng vì MAX_TOKENS thì server tự gọi "viết tiếp" tối đa 3 lần rồi nối lại; câu hỏi tối đa 2000 ký tự;
+  dữ liệu đính kèm tối đa 120.000 ký tự (ghi chú 300, nhận xét 1000 ký tự/mục thay vì 60/250); lịch sử mỗi lượt 6000 ký tự; lời dặn độ dài đổi thành "trả lời đầy đủ, không cắt ngang".
+- (07/10, 2026-10-08a) KHOÁ TRỢ LÝ THEO TÀI KHOẢN: db.users[u].aiBlock {at, by, reason}. Admin (⚙️ Cài đặt → "Người dùng trợ lý") thấy từng tài khoản: số câu hôm nay, tổng đã hỏi, số 👎, nút Khoá AI / Mở khoá (hỏi lý do, người dùng thấy lý do).
+  API: GET /api/ai/users, POST /api/ai/block {username, blocked, reason} (chỉ admin tài khoản chính; không khoá được admin). Bị khoá → /api/ai/ask và /api/ai/draft trả 403 {blocked:true}; /api/me có aiBlocked + aiBlockMsg; khung chat khoá ô nhập; nút "AI soạn nhận xét" không hiện.
+  Link đăng nhập nhanh không có khoá riêng (admin thu hồi link nếu cần).
+
+THIẾT KẾ LẠI GIAO DIỆN (08/10, bản 2026-10-08a) — phong cách "vở ô li"
+- Chỉ đổi CSS + vài dòng HTML (tên class/id/biến CSS cũ giữ nguyên nên giao diện sự kiện + nền sao /sky vẫn chạy). Biến mới: --cover, --margin, --hl, --paper2, --font, --hand.
+- Font TỰ PHỤC VỤ ở public/fonts/ (fonts.css + 15 file woff2, ~245 KB): Be Vietnam Pro (giao diện) + Patrick Hand (chữ viết tay: tên trên nhãn, cột điểm tổng, 3 ô nhận xét). Cả hai giấy phép OFL. Phải chép cả thư mục public/fonts khi cập nhật.
+- Nhận diện: tờ giấy có lề đỏ kép (.card, dialog, khung chat), nền kẻ ô li, header = bìa vở + nhãn "9E" ghi tên người đăng nhập (#hWho/#hRole), tab chia mục có nẹp đỏ (cuộn ngang trên điện thoại), bảng điểm kiểu sổ cái, điểm tổng bút đỏ, nhận xét chữ viết tay mực đỏ, ghi chú vàng dạ quang.
+- Ô nhận xét bị style nội tuyến (font:inherit; color) nên CSS dùng !important cho #weekComment/#toCmt/#classCmt.
+
+LỚP PHÓ LAO ĐỘNG + LINK XEM THEO TUẦN (11/10, bản 2026-10-17a)
+- Vai trò mới role "lpld", tài khoản "lpld" (mật khẩu mặc định lpld123, buộc đổi lần đầu). Migration trong server.js tự thêm vào db cũ (không đụng dữ liệu khác).
+  Quyền = quyền TRỰC NHẬT của lớp trưởng (nghỉ lễ, phạt, khôi phục phạt, xếp lịch, trực lại, xếp chỗ ngồi, thấy ✍ người thêm phạt) + xem điểm cả lớp/Tổng hợp (canViewTo, canViewSummary, /api/students toàn lớp).
+  KHÔNG: sửa điểm, thêm/xoá HS, nhận xét chung lớp, chụp ảnh/tạo link xem, đổi cài đặt. Có trong QUICK_ROLES (tạo link đăng nhập nhanh được), AI_ROLE, aiIsAdv (trợ lý thấy cả lớp). Nếu muốn lpld chụp ảnh: đổi canExport.
+- LINK XEM CÔNG KHAI /view/tuan<N> (không đăng nhập): trong hộp 📸 Chụp ảnh (chỉ khi xem theo tuần) có khối "🔗 Tạo link xem" (canExport = gvcn + admin).
+  API: GET/POST /api/week-share {week, days: 1|3|7|30, on:false = dừng} → db.weekShare[tuần] = {until, by, at}; công khai: GET /api/public/week/:w (404 nếu chưa mở / hết hạn) và GET /view/tuan<N> (sendFile public/view.html, noindex, no-store).
+  Dữ liệu lấy sống từ sổ (weekSheet) nên tự cập nhật; trang tự làm mới mỗi phút. Chỉ lộ: tên, điểm, số lần từng lỗi, nhận xét tuần của tổ + nhận xét lớp. KHÔNG lộ ghi chú riêng từng HS. Tổ chưa cập nhật (toUpdatedInWeek) thì rank = null (chưa xếp hạng).
+  view.html: 1 file, thẻ theo tổ (không bảng 14 cột) để đọc tốt trên điện thoại; lọc tổ, tìm tên không dấu, sắp xếp STT/điểm. Dùng fonts.css như web chính.
+- Tên miền: link lấy theo địa chỉ đang truy cập (location.origin). Muốn dạng lop-9e-2026-2027.<tailnet>.ts.net: sudo tailscale set --hostname=lop-9e-2026-2027 (đổi tên máy trong tailnet; link cũ ubuntu.tailada059.ts.net sẽ ngừng chạy, cần chạy lại funnel nếu có). Chưa test trên máy thật.
+- Test đã chạy: server tạm (Express 4) + dữ liệu giả: quyền lpld (403 đúng chỗ), link công khai mở/dừng/hết hạn, Playwright iPhone 13 + desktop 1280 (không tràn ngang, không lỗi console).
+
+SỬA LUẬT TRỰC NHẬT (11/10, bản 2026-10-17a)
+- (Bản 11c thay mục này) Số ngày còn lại left = ngày trực − ngày người phạt chiếm: left>=3 (hoặc phạt vừa ngày dư) → kind 'normal' + penFirst (người phạt trực các ngày ĐẦU, bàn của tổ các ngày sau, KHÔNG +8đ vì không còn ngày dư; bàn thiếu ngày → nợ trực bù 'mk'); left<=2 → kind 'penalty' (tổ dời tuần sau, mỗi ngày còn lại 1 bàn tổ chờ trực lẻ +8đ). Phạt cả tổ (group) giữ nguyên cách cũ. Quy tắc 2 tuần liên tiếp (forceNormal) giữ nguyên.
+- 2 tuần liên tiếp kind != 'normal' (st.hist trong runSim) → tuần kế tiếp ép kind='normal' (forceNormal) cho tổ rotTo(r), ngày dư type 'none', không +8đ; phạt dư dồn tiếp. Tuần chốt kiểu v2 không đổi (replayWeek). Ngày thường dư (tuần thường bình thường) vẫn trực lẻ +8đ như cũ.
+- Test: phạt 1 HS 14 ngày → tuần phạt, tuần phạt, tuần chuẩn (Tổ chờ trực), tuần sau Tổ kế tiếp.
+
+SỬA 11/10 (bản 2026-10-17a)
+- Tuần chuẩn ép sau 2 tuần liên tiếp (forceNormal): ngày dư KHÔNG để trống nữa — 1 bàn của tổ (pickBonusDesks) trực, type 'normal', không +8đ.
+- BỎ chỉnh tay lịch trực: giao diện không còn ô chọn người + ô tích phạt; POST /api/duty/roster trả 403; liveWeek không còn dùng bản lưu tay (saved); blink luôn false. Nhãn tuần chưa chốt: "⏳ Dự kiến".
+
+XEM TUẦN SAU TRONG /view/tuanN + BẢO MẬT + BỚT TỪ NẶNG (14/10, bản 2026-10-17a)
+- /view/tuanN: API /api/public/week/:w trả thêm "duty":{thisWeek,nextWeek} (dutyWeekIndexForSchoolWeek ánh xạ tuần điểm ↔ tuần trực vì 2 trục có thể lệch do admin đổi ngày bắt đầu trực). view.html thêm khối "Lịch trực nhật" 2 nút Tuần này/Tuần sau.
+- Bảo mật: app.disable('x-powered-by'); trust proxy 1 + cookie secure:'auto' (đứng sau Tailscale Funnel, tự bật Secure khi có HTTPS, không khoá nhầm lúc test HTTP nội bộ); header X-Content-Type-Options/X-Frame-Options DENY/Referrer-Policy/Permissions-Policy/CSP (frame-ancestors none, không chặn script/style inline vì toàn bộ app dùng inline)/HSTS; rate limit tự viết (không thêm dependency): loginLimiter 10 lần/15 phút/IP cho /api/login + /:code (link nhanh), apiLimiter 300 lượt/phút/IP cho toàn bộ /api/; bcrypt rounds 10→12 cho mật khẩu MỚI (đổi mật khẩu/reset/tài khoản mới — không ảnh hưởng hash cũ).
+- Mobile/cảm ứng: viewport thêm viewport-fit=cover; safe-area-inset trên body; touch-action:manipulation cho nút/link/select (bỏ delay 300ms double-tap, vẫn pinch-zoom được); -webkit-tap-highlight-color:transparent; overscroll-behavior:contain trên dialog + html (chặn kéo xuống làm mới ngoài ý muốn); min-height 44px (40px nút nhỏ) cho nút ở mobile; input/select mobile min-height 42px (đã có font-size 16 từ trước); autocomplete current-password/new-password cho các ô mật khẩu (gợi ý trình quản lý mật khẩu trên điện thoại); -webkit-overflow-scrolling:touch cho vùng cuộn ngang (.tablewrap/.tabs/.dutyDays, .pills/.ddays bên view.html).
+- Bỏ chữ nặng nề (phạt/vi phạm) trong toàn bộ chữ hiển thị (index.html, view.html, huong-dan.md, API error message, AI greeting/chip) — đổi thành "trực bổ sung", "được xếp trực thêm", bỏ icon ⚠️ gắn với các mục này, đổi "Lịch sử vi phạm" → "Lịch sử trực nhật", "Số lần vi phạm" → "Số lượt trừ điểm". KHÔNG đổi tên biến/API/CSS class nội bộ (db.duty.penalty, /api/duty/penalty, .dutyPen, .penDel, .tagRedo...) — chỉ đổi chữ hiển thị, để tránh vỡ logic. Thêm 1 dòng quy tắc trong aiSystem() bắt trợ lý AI luôn nói giảm nói tránh, không dùng "phạt/vi phạm/nghiêm trọng/kỷ luật" kể cả khi dữ liệu nền có từ đó.
+- Test: server tạm (Express 4) + Playwright (iPhone 13) — không còn chữ "phạt"/"vi phạm" trong /api/public/week, rate limit login đúng 10 lần rồi 429, header bảo mật xuất hiện đủ, khối lịch trực tuần sau hiển thị đúng ảnh chụp.
+
+/vibe-check — SỬA LỖ HỔNG (14/10, bản 2026-10-17a)
+- Tự kiểm bằng request thật phát hiện: app.set('trust proxy', 1) thêm ở bản 14a làm Express tin thẳng header
+  X-Forwarded-For do client tự gửi để tính req.ip — test bằng cách gửi header đó với giá trị tuỳ ý chứng minh
+  req.ip đổi theo ý muốn ngay lập tức, vô hiệu hoá hoàn toàn giới hạn chống dò mật khẩu (loginLimiter cũ theo IP).
+  Lý do: chưa xác nhận được Tailscale Funnel có tự ghi đè XFF hay chỉ chuyển tiếp nguyên văn header của client.
+- ĐÃ SỬA: bỏ hẳn app.set('trust proxy', ...). Đổi giới hạn đăng nhập sang đếm theo TÊN TÀI KHOẢN bị thử (chỉ cộng khi
+  sai mật khẩu, không cộng khi đúng) thay vì theo IP — không bị giả mạo được vì không phụ thuộc IP nữa, và 1 tài khoản
+  bị khoá tạm không ảnh hưởng các tài khoản khác (đã test: giả 11 IP khác nhau cùng thử sai 1 tài khoản vẫn bị khoá
+  đúng tài khoản đó ở lần 11; tài khoản khác đăng nhập bình thường). apiLimiter (giới hạn chung /api/) và limiter cho
+  link nhanh /:code đổi sang dùng req.socket.remoteAddress trực tiếp (không qua header, không spoof được), chỉ còn
+  tác dụng chặn spam thô chứ không dùng để bảo vệ đăng nhập. Hệ quả đã biết: do không tin header proxy nữa, cookie
+  session sẽ không tự bật cờ Secure dù vào bằng HTTPS qua Funnel (giống hệt hành vi gốc trước khi có bản 14a — không
+  phải lỗi mới, chỉ là bỏ một cải tiến chưa chắc an toàn). Nếu sau này xác nhận chắc chắn Tailscale Funnel tự ghi đè
+  XFF (không chuyển tiếp nguyên văn của client) thì bật lại trust proxy để có cờ Secure, nhưng phải tự kiểm tra trước
+  bằng cách gửi request có X-Forwarded-For giả từ máy khác (không phải chính server) và xem log req.ip có đổi theo
+  không — đổi theo là CÒN LỖ, không đổi là an toàn để bật.
+- Đã rà thêm theo /vibe-check: không có thêm dependency ngoài (không cần gitleaks/npm audit vì server chỉ đọc
+  file JSON, không SQL/GraphQL/upload file người dùng ngoài admin sửa theme/sky có giới hạn tên file); mọi route
+  nhạy cảm đều có requireLogin + canViewTo/canEditTo/canManageStudents v.v. (rà toàn bộ danh sách route, không thấy
+  route thiếu xác thực ngoài các route cố ý công khai: /api/accounts, /api/login, /api/logout, /api/theme/active,
+  /api/public/week/:w, /view/tuan*, /:code); XSS: tên học sinh/ghi chú/nhận xét luôn qua escapeHtml()/esc() ở mọi nơi
+  hiển thị (đã test trực tiếp bằng Playwright: đặt tên "<script>alert(1)</script>" cho 1 học sinh, mở trang /view công
+  khai — hiện ra đúng là chữ, không chạy script, không có popup); CORS không set header nào (đúng, không cần); các
+  file nhạy cảm (.env, .git, data/db.json, data/secret.txt, server.js...) không có trên /public nên không lộ qua
+  express.static — có vẻ "200" khi gọi thử là do app.get('*') trả về index.html cho MỌI đường dẫn không khớp (hành vi
+  SPA fallback bình thường, không phải lộ file thật, đã xác minh nội dung trả về giống hệt trang chủ); npm audit (chỉ
+  trên môi trường thử, không phải máy thật) báo 0 lỗ hổng.
+
+MÃ ĐĂNG NHẬP THAY MẬT KHẨU (17/10, bản 2026-10-17a)
+- Tab Tài khoản (chỉ admin, không phải phiên quick-link) thêm thẻ "🔑 Mã đăng nhập không cần mật khẩu thật":
+  GET /api/temp-codes trả {date, list:[{username,display,dailyCode,temp}]}. Gõ mã vào ô Mật khẩu màn hình đăng nhập thường (vẫn chọn tài khoản) — không phải link riêng, không qua /:code.
+- Mã hằng ngày: mỗi tài khoản (kể cả admin — người dùng yêu cầu rõ không loại trừ) có 1 mã 6 ký tự riêng (genLoginCode():
+  trộn 1 chữ + 1 số + 1 ký hiệu rồi random 3 ký tự còn lại từ cả 3 nhóm, xáo vị trí; bộ ký tự bỏ I/O/l/0/1 dễ nhầm).
+  Tính lười (dailyCodeFor): chỉ sinh khi ngày đổi (so vnDateStr()), lưu db.dailyCodes[username], dùng lại trong ngày.
+- Mã tạm thời: db.users[u].tempCode = {code, mode:'once'|'until', expiresAt, createdAt, createdBy}. POST
+  /api/temp-codes/:username {mode, hours} tạo (ghi đè mã cũ nếu có); mode 'once' vẫn có hạn dự phòng 48h nếu không
+  dùng (tránh treo mãi); mode 'until' hạn = hours (1–720) do admin chọn. POST .../revoke xoá sớm. GET /api/temp-codes
+  tiện thể dọn mã đã hết hạn (lazy cleanup).
+- /api/login: thử mật khẩu thật (bcrypt) trước, không khớp thì thử tempCode (nếu còn hạn), không khớp nữa thì thử
+  dailyCodeFor(username). Khớp cái nào cũng vào được; nếu là tempCode mode='once' thì xoá ngay sau khi dùng thành
+  công (consumeOnce). loginFail/loginBlocked (giới hạn 10 lần sai/15 phút theo TÊN TÀI KHOẢN, từ bản 14b) áp dụng
+  chung cho mọi cách thử sai, không phân biệt mật khẩu thật hay mã — không cần sửa gì thêm ở đó.
+  Đăng nhập bằng mã KHÔNG cho đổi mật khẩu thật (change-password vẫn đòi oldPassword đúng) — mã không phải cách
+  chiếm quyền vĩnh viễn tài khoản, chỉ để vào xem/thao tác tạm.
+- Rủi ro cần biết: mã (cả hằng ngày lẫn tạm thời) lưu dạng chữ thường (không băm) trong db.json vì cần hiện lại được
+  cho admin đọc — cùng mức rủi ro với khoá API AI đã lưu plaintext từ trước, không phải nhóm rủi ro mới. Tài khoản
+  admin có mã hằng ngày/tạm thời giống mọi tài khoản khác theo đúng yêu cầu — nhưng admin có quyền reset mật khẩu
+  MỌI tài khoản khác không cần mật khẩu cũ, nên nếu mã của riêng tài khoản admin lọt ra ngoài thì rủi ro cao hơn hẳn
+  các tài khoản khác (có thể đổi mật khẩu thật của cả lớp). Cân nhắc revoke/không đọc to mã admin ở nơi đông người.
+- Test: dùng mã hằng ngày của to1 đăng nhập thay mật khẩu thật — qua; mã tạm thời "dùng 1 lần" cho to2 — lần 1 qua,
+  lần 2 (dùng lại) bị từ chối; mã "có hạn" cho to3 — dùng được nhiều lần, sau khi admin bấm Thu hồi thì bị từ chối
+  ngay. Playwright (iPhone 13): bảng cuộn ngang bình thường (giống bảng Link đăng nhập nhanh có sẵn), bấm "Tạo mã"
+  trên điện thoại render lại đúng thành mã + nút Chép + Thu hồi.

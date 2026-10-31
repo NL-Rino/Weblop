@@ -1,0 +1,16 @@
+CẬP NHẬT 2026-10-17a — Mã đăng nhập không cần mật khẩu thật
+  cp server.js ~/lop-web/server.js
+  cp huong-dan.md ~/lop-web/huong-dan.md
+  cp public/index.html ~/lop-web/public/index.html
+  sudo systemctl restart lop-web
+(Không đụng data/db.json.)
+
+Tóm tắt:
+- Tab Tài khoản (admin) có thẻ mới "🔑 Mã đăng nhập không cần mật khẩu thật":
+  + Mã hằng ngày: mỗi tài khoản (kể cả admin) tự có 1 mã 6 ký tự (chữ+số+ký hiệu), tự đổi mỗi ngày lúc 00:00,
+    dùng được nhiều lần trong ngày. Admin xem được mã của mọi tài khoản để đọc/gửi cho người cần.
+  + Mã tạm thời: admin bấm "Tạo mã" cho từng tài khoản khi cần, chọn "Dùng 1 lần" hoặc "Có hạn" (chọn số giờ),
+    thu hồi được bất cứ lúc nào bằng nút "✖ Thu hồi".
+- Cách dùng: gõ mã vào đúng ô "Mật khẩu" ở màn hình đăng nhập bình thường, vẫn chọn đúng tài khoản ở ô "Bạn là".
+- Lưu ý: mã của riêng tài khoản admin nhạy cảm hơn hẳn các tài khoản khác (admin đổi được mật khẩu mọi người),
+  nên cẩn thận khi chia sẻ/đọc to mã đó.
